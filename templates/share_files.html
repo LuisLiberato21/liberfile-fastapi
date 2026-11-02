@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compartir Archivos</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column; 
+        }
+        
+        /* Barra de navegación */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            color: #fff;
+            padding: 10px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .navbar img {
+            width: 80px;
+        }
+        
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        .navbar a:hover {
+            background-color: #555;
+        }
+        
+        .navbar a.logout {
+            color: #ff4d4d;
+            font-weight: bold;
+        }
+        
+        /* Contenido principal */
+        .main-content {
+            padding: 20px;
+            flex: 1;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        .file-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .file-actions button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #28a745;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .file-actions button:hover {
+            background-color: #218838;
+        }
+
+        .file-list {
+            margin-bottom: 20px;
+        }
+        
+        .file-list div {
+            padding: 10px;
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .file-list div:hover {
+            background-color: #e9ecef;
+        }
+
+        .user-selection {
+            margin-bottom: 20px;
+        }
+
+        .permissions {
+            margin-bottom: 20px;
+        }
+
+        .permissions label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* Espaciado entre botones */
+        .file-actions button + button {
+            margin-left: 10px; /* Agrega margen entre los botones */
+        }
+    </style>
+</head>
+<body>
+    <!-- Barra de navegación -->
+    <div class="navbar">
+        <img src="/static/logo.png" alt="Logo">
+        <div>
+            <a href="/file-manager">Gestor</a>
+            <a href="/users">Usuarios</a>
+            <a href="/share-files">Compartir Archivos</a>
+            <a href="/admin-user">Administración de Usuario</a>
+            <a href="/logout" class="logout" onclick="logout()">Cerrar sesión</a>
+        </div>
+    </div>
+    
+    <!-- Contenido principal -->
+    <div class="main-content">
+        <div class="container">
+            <h1>Compartir Archivos</h1>
+            
+            <div class="file-actions">
+                <button onclick="shareFile()">Compartir archivo</button>
+                <button onclick="viewSharedFiles()">Ver archivos compartidos</button>
+            </div>
+
+            <div class="file-list">
+                <h3>Archivos disponibles para compartir:</h3>
+                <div class="file" onclick="selectFile('Archivo1.txt')">Archivo1.txt</div>
+                <div class="file" onclick="selectFile('Archivo2.pdf')">Archivo2.pdf</div>
+                <div class="file" onclick="selectFile('Archivo3.jpg')">Archivo3.jpg</div>
+                <!-- Aquí aparecerán los archivos que el usuario puede compartir -->
+            </div>
+
+            <div class="user-selection">
+                <h3>Selecciona destinatario:</h3>
+                <select id="recipient">
+                    <option value="usuario1">Usuario 1</option>
+                    <option value="usuario2">Usuario 2</option>
+                    <option value="usuario3">Usuario 3</option>
+                    <!-- Aquí aparecerán los usuarios registrados -->
+                </select>
+            </div>
+
+            <div class="permissions">
+                <h3>Establecer permisos:</h3>
+                <label>
+                    <input type="radio" name="permissions" value="read" checked>
+                    Solo lectura
+                </label>
+                <label>
+                    <input type="radio" name="permissions" value="edit">
+                    Edición
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = "";
+
+        function logout() {
+            // Redirigir al módulo de inicio de sesión
+            window.location.href = '/logout';
+        }
+
+        function shareFile() {
+            if (selectedFile) {
+                const recipient = document.getElementById("recipient").value;
+                const permission = document.querySelector('input[name="permissions"]:checked').value;
+                alert(`Compartiendo '${selectedFile}' con ${recipient} con permiso de ${permission}.`);
+                // Aquí puedes agregar el código para compartir el archivo en el servidor.
+            } else {
+                alert("Por favor, selecciona un archivo para compartir.");
+            }
+        }
+
+        function viewSharedFiles() {
+            alert("Funcionalidad para ver archivos compartidos.");
+            // Aquí puedes agregar el código para mostrar los archivos que han sido compartidos.
+        }
+
+        function selectFile(fileName) {
+            selectedFile = fileName;
+            alert(`Archivo seleccionado: ${selectedFile}`);
+        }
+    </script>
+</body>
+</html>

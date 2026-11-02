@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página de Inicio</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 400px;
+            margin: 10px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        input[type="text"], input[type="password"] {
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px;
+            margin-top: 15px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .modify-btn {
+            background-color: #007bff;
+        }
+        .modify-btn:hover {
+            background-color: #0069d9;
+        }
+        footer {
+            text-align: center;
+            margin-top: 10px;
+        }
+        footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 5px;
+        }
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="static/logo.png" alt="Logo" style="display: block; margin: 0 auto; width: 150px;"/>
+        <h1>Bienvenido a Liberfile</h1>
+        <div id="alert" style="display:none;" class="alert"></div>
+        <form method="post" action="/login" id="loginForm">
+            <label for="usuario">Usuario:</label>
+            <input type="text" id="usuario" name="usuario" placeholder="Usuario" required>
+            
+            <label for="contraseña">Contraseña:</label>
+            <input type="password" id="contraseña" name="contraseña" placeholder="Contraseña" required>
+            
+            <button type="submit">Ingresar</button>
+            <button type="button" class="modify-btn" onclick="window.location.href='/modify-password'">Modificar contraseña</button>
+        </form>
+        <footer>
+            <p>¿Olvidaste tu contraseña? <a href="/reset-password">Recupérala aquí</a></p>
+        </footer>        
+    </div>
+
+    <script>
+        document.getElementById('loginForm').onsubmit = async function(e) {
+            e.preventDefault(); // Prevenir el envío del formulario
+            const formData = new FormData(this);
+            const response = await fetch(this.action, {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            const alertDiv = document.getElementById('alert');
+            alertDiv.style.display = 'block';
+            if (response.ok) {
+                alertDiv.className = 'alert alert-success'; // Para mensajes exitosos
+                alertDiv.innerHTML = `
+                    <p>${result.mensaje}, ${result.nombres} ${result.apellidos}</p>
+                    <button class="confirmation-button" onclick="window.location.href='/file-manager'">OK</button>
+                `;
+            } else {
+                alertDiv.className = 'alert alert-danger'; // Para mensajes de error
+                alertDiv.innerText = result.detail;
+            }
+        };
+    </script>
+</body>
+</html>

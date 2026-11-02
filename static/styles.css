@@ -1,0 +1,130 @@
+/* Estilos generales */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Centrar vertical y horizontalmente */
+    min-height: 100vh;
+    background-image: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+}
+
+/* Contenedor principal del formulario */
+.container {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    width: 100%;
+    max-width: 450px; /* Ajuste el máximo ancho */
+    text-align: left; /* Cambié el texto a alineación izquierda */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column; /* Asegura que los elementos se alineen en columna */
+    justify-content: center; /* Centra el contenido verticalmente */
+}
+
+/* Encabezado */
+h1 {
+    color: #4e6bff;
+    margin-bottom: 15px; /* Menor espacio */
+    font-size: 26px; /* Tamaño de fuente un poco más pequeño */
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Estilo del formulario */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Espacio entre los campos más pequeño */
+}
+
+/* Input de texto */
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    border-color: #4e6bff;
+    outline: none;
+    box-shadow: 0 0 5px rgba(79, 107, 255, 0.3);
+}
+
+/* Botones */
+button {
+    background-color: #4e6bff;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 18px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #3659b3;
+}
+
+button:active {
+    background-color: #2a4783;
+}
+
+/* Mensajes de éxito y error */
+.alert {
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 20px;
+    display: none;
+    font-size: 16px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Footer */
+footer {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #888;
+    text-align: center;
+}
+
+/* Botón "Volver al inicio" */
+.btn-secondary {
+    background-color: #007bff;
+    color: white;
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin-top: 15px;
+    font-size: 16px;
+    width: 100%;
+    cursor: pointer;
+}
+
+.btn-secondary:hover {
+    background-color: #0056b3;
+}

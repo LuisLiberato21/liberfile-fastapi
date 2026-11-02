@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Usuario</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Barra de navegación */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            color: #fff;
+            padding: 15px 30px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar img {
+            width: 80px;
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .navbar a:hover {
+            background-color: #555;
+        }
+
+        .navbar a.logout {
+            color: #ff4d4d;
+            font-weight: bold;
+        }
+
+        /* Contenido principal */
+        .main-content {
+            padding: 20px;
+            flex-grow: 1;
+            overflow: auto;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 250px; /* Reduce el padding general */
+            padding-top: 25px; /* Espacio adicional en la parte superior */
+            box-shadow: 0px 4px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 2rem;
+            margin-top: 0; /* Elimina margen superior para centrar mejor */
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: flex;
+            margin: 12px 0 5px;
+            color: #555;
+            font-size: 1rem;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="tel"],
+        select {
+            width: calc(150% - 5px); /* Ajuste del ancho */
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="tel"]:focus,
+        select:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+
+        .button {
+            padding: 15px;
+            border: none;
+            background-color: #28a745;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .button:hover {
+            background-color: #218838;
+        }
+
+        /* Estilo del formulario */
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            align-items: last baseline;
+        }
+
+        .form-container input,
+        .form-container select {
+            font-size: 1rem;
+            color: #333;
+        }
+
+        /* Estilo de alerta */
+        .alert {
+            display: none;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .alert-success {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .alert-error {
+            background-color: #f44336;
+            color: white;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Barra de navegación -->
+    <div class="navbar">
+        <img src="/static/logo.png" alt="Logo">
+        <div>
+            {% if es_admin %}
+            <a href="/file-manager">Gestor</a>
+            <a href="/users">Usuarios</a>
+            <a href="/share-files">Compartir Archivos</a>
+            <a href="/admin-user">Administración de Usuario</a>
+            <a href="/logout" class="logout" onclick="logout()">Cerrar sesión</a>
+            {% else %}
+            <a href="/login">Iniciar sesión</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="main-content">
+        <div class="container">
+            <h1>Registrar Usuario</h1>
+            <form id="register-form" action="/register" method="post" class="form-container">
+                <label for="_id">Cédula:</label>
+                <input type="text" id="cedula" name="cedula" placeholder="Introduce el número de cédula" required>
+
+                <label for="usuario">Usuario:</label>
+                <input type="text" id="usuario" name="usuario" placeholder="Introduce el nombre de usuario" required>
+
+                <label for="nombres">Nombres:</label>
+                <input type="text" id="nombres" name="nombres" placeholder="Introduce los nombres" required>
+
+                <label for="apellidos">Apellidos:</label>
+                <input type="text" id="apellidos" name="apellidos" placeholder="Introduce los apellidos" required>
+
+                <label for="correo_electronico">Correo Electrónico:</label>
+                <input type="email" id="correo_electronico" name="correo_electronico" placeholder="Introduce el correo electrónico" required>
+
+                <label for="direccion">Dirección:</label>
+                <input type="text" id="direccion" name="direccion" placeholder="Introduce la dirección">
+
+                <label for="telefono">Teléfono:</label>
+                <input type="tel" id="telefono" name="telefono" placeholder="Introduce el número de teléfono">
+
+                <label for="contraseña">Contraseña:</label>
+                <input type="password" id="contraseña" name="contraseña" placeholder="Introduce la contraseña" required>
+
+                <label for="rol">Rol:</label>
+                <select id="rol" name="rol" required>
+                    <option value="">Seleccione un rol</option>
+                    {% if es_admin %}
+                    <option value="Super administrador">Super administrador</option>
+                    <option value="Administrador">Administrador</option>
+                    {% endif %}
+                    <option value="Auxiliar">Auxiliar</option>
+                </select>
+                {% if not es_admin %}
+                <p style="color:#777; font-size:0.85rem; text-align:left; margin-top:-8px;">
+                    El registro público sólo permite crear cuentas con rol "Auxiliar".
+                    Un administrador ya autenticado puede crear cuentas con más privilegios
+                    desde la página de Usuarios.
+                </p>
+                {% endif %}
+
+                <button type="submit" class="button">Registrar Usuario</button>
+            </form>
+
+            <!-- Contenedor de mensaje de alerta -->
+            <div id="alert-message" class="alert" onclick="resetForm()"> <!-- Se agrega el evento onclick aquí -->
+                <!-- El mensaje de alerta se actualizará dinámicamente desde el script -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("register-form").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            const formObject = {};
+            formData.forEach((value, key) => formObject[key] = value);
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    body: new URLSearchParams(formObject)
+                });
+
+                const data = await response.json();
+                const alertMessage = document.getElementById("alert-message");
+
+                if (response.status === 200) {
+                    alertMessage.classList.remove("alert-error");
+                    alertMessage.classList.add("alert-success");
+                    alertMessage.textContent = data.mensaje; // Mensaje de éxito
+                } else {
+                    alertMessage.classList.remove("alert-success");
+                    alertMessage.classList.add("alert-error");
+                    alertMessage.textContent = data.detail; // Mensaje de error
+                }
+
+                alertMessage.style.display = "block"; // Mostrar mensaje de alerta
+            } catch (error) {
+                console.error("Error:", error);
+                const alertMessage = document.getElementById("alert-message");
+                alertMessage.classList.remove("alert-success");
+                alertMessage.classList.add("alert-error");
+                alertMessage.textContent = "Ocurrió un error inesperado.";
+                alertMessage.style.display = "block";
+            }
+        });
+
+        function resetForm() {
+            // Reiniciar formulario
+            document.getElementById("register-form").reset();
+            // Ocultar el mensaje de alerta
+            document.getElementById("alert-message").style.display = "none";
+        }
+    </script>
+</body>
+</html>

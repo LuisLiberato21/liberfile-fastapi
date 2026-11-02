@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página de Usuarios</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Barra de navegación */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            color: #fff;
+            padding: 10px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar img {
+            width: 80px;
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .navbar a:hover {
+            background-color: #555;
+        }
+
+        .navbar a.logout {
+            color: #ff4d4d;
+            font-weight: bold;
+        }
+
+        /* Contenido principal */
+        .main-content {
+            padding: 20px;
+            flex: 1;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Estilos del modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0px 0px 10px 0px gray;
+            border-radius: 8px;
+        }
+
+        .modal input, .modal select {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barra de navegación -->
+    <div class="navbar">
+        <img src="/static/logo.png" alt="Logo">
+        <div>
+            <a href="/file-manager">Gestor</a>
+            <a href="/users">Usuarios</a>
+            <a href="/share-files">Compartir Archivos</a>
+            <a href="/admin-user">Administración de Usuario</a>
+            <a href="/logout" class="logout" onclick="logout()">Cerrar sesión</a>
+        </div>
+    </div>
+    
+    <!-- Contenido principal -->
+    <div class="main-content">
+        <div class="container">
+            <h1>Página de Usuarios</h1>
+            <button onclick="window.location.href='/register-user'" class="button">Crear nuevo usuario</button>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Correo Electrónico</th>
+                        <th>Rol</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    <!-- Aquí aparecerán los usuarios dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal para editar usuario -->
+    <div id="modal-editar" class="modal">
+        <h2>Editar Usuario</h2>
+        <input type="hidden" id="edit-id">
+        <label>Nombre:</label> <input type="text" id="edit-nombres">
+        <label>Apellidos:</label> <input type="text" id="edit-apellidos">
+        <label>Email:</label> <input type="email" id="edit-email">
+        <label>Rol:</label> 
+        <select id="edit-rol">
+            <option value="Super Administrador">Super Administrador</option>
+            <option value="Administrador">Administrador</option>
+            <option value="Auxiliar">Auxiliar</option>
+        </select>
+        <div class="modal-buttons">
+            <button onclick="guardarCambios()" class="button">💾 Guardar</button>
+            <button onclick="document.getElementById('modal-editar').style.display='none'" class="button">❌ Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        async function cargarUsuarios() {
+            const response = await fetch("/api/usuarios");
+            const usuarios = await response.json();
+
+            const tabla = document.getElementById("userTableBody");
+            tabla.innerHTML = "";
+
+            usuarios.forEach(usuario => {
+                let fila = `
+                    <tr>
+                        <td>${usuario.nombres} ${usuario.apellidos}</td>
+                        <td>${usuario.correo_electronico}</td>
+                        <td>${usuario.rol}</td>
+                        <td>
+                            <button class="button" onclick="eliminarUsuario('${usuario._id}')">❌ Eliminar</button>
+                            <button class="button" onclick="editarUsuario('${usuario._id}', '${usuario.nombres}', '${usuario.apellidos}', '${usuario.correo_electronico}', '${usuario.rol}')">✏️ Modificar</button>
+                        </td>
+                    </tr>
+                `;
+                tabla.innerHTML += fila;
+            });
+        }
+
+        async function eliminarUsuario(id) {
+            if (confirm("¿Seguro que deseas eliminar este usuario?")) {
+                const response = await fetch(`/api/usuarios/${id}`, { method: "DELETE" });
+
+                if (response.ok) {
+                    alert("Usuario eliminado con éxito");
+                    cargarUsuarios();
+                } else {
+                    alert("Error al eliminar usuario");
+                }
+            }
+        }
+
+        function editarUsuario(id, nombres, apellidos, email, rol) {
+            document.getElementById("edit-id").value = id;
+            document.getElementById("edit-nombres").value = nombres;
+            document.getElementById("edit-apellidos").value = apellidos;
+            document.getElementById("edit-email").value = email;
+            document.getElementById("edit-rol").value = rol;
+            document.getElementById("modal-editar").style.display = "block";
+        }
+
+        async function guardarCambios() {
+            const usuarioId = document.getElementById("edit-id").value;
+            const nombres = document.getElementById("edit-nombres").value;
+            const apellidos = document.getElementById("edit-apellidos").value;
+            const email = document.getElementById("edit-email").value;
+            const rol = document.getElementById("edit-rol").value;
+
+            const response = await fetch(`/api/usuarios/${usuarioId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nombres, apellidos, correo_electronico: email, rol })
+            });
+
+            if (response.ok) {
+                alert("Usuario actualizado con éxito");
+                document.getElementById("modal-editar").style.display = "none";
+                cargarUsuarios();
+            } else {
+                alert("Error al actualizar usuario");
+            }
+        }
+
+        window.onload = cargarUsuarios;
+    </script>
+
+</body>
+</html>

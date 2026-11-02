@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Archivos</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Barra de navegación */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            color: #fff;
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .navbar img {
+            width: 80px;
+        }
+        
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-left: 15px;
+            transition: background-color 0.3s;
+        }
+
+        .navbar a:hover {
+            background-color: #555;
+        }
+
+        .navbar a.logout {
+            color: #ff4d4d;
+            font-weight: bold;
+        }
+
+        /* Contenedor principal con barra lateral */
+        .main-container {
+            display: flex;
+            height: 100%; /* Ocupa toda la altura disponible */
+        }
+
+        /* Barra lateral */
+        .sidebar {
+            width: 250px;
+            background-color: #fff;
+            padding: 40px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .sidebar button {
+            width: 80%;
+            padding: 10px;
+            border: none;
+            background-color: #28a745;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar button:hover {
+            background-color: #218838;
+        }
+
+        .folder-list {
+            width: 80%;
+            margin-top: 10px;
+        }
+
+        .folder {
+            padding: 12px;
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .folder:hover {
+            background-color: #e9ecef;
+        }
+
+        /* Contenido principal */
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #fff;
+        }
+
+        .content h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* Barra de búsqueda */
+        .search-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        #searchBar {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            transition: border-color 0.3s;
+            width: 150%;
+            max-width: 600px;
+        }
+
+        #searchBar:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        #searchButton {
+            padding: 10px 5px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #searchButton:hover {
+            background-color: #0056b3;
+        }
+
+        /* Contenedor de archivos en íconos */
+        .file-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-evenly;
+        }
+
+        .file-item {
+            width: 100px;
+            height: 100px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            text-align: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .file-item:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Barra de navegación -->
+    <div class="navbar">
+        <img src="/static/logo.png" alt="Logo">
+        <div>
+            <a href="/file-manager">Gestor</a>
+            <a href="/users">Usuarios</a>
+            <a href="/share-files">Compartir Archivos</a>
+            <a href="/admin-user">Administración de Usuario</a>
+            <a href="/logout" class="logout" onclick="logout()">Cerrar sesión</a>
+        </div>
+    </div>
+
+    <!-- Contenedor principal -->
+    <div class="main-container">
+        <!-- Barra lateral -->
+        <div class="sidebar">
+            <button onclick="uploadFile()">Subir archivo</button>
+            <button onclick="createFolder()">Crear carpeta</button>
+
+            <div class="folder-list">
+                <div class="folder" onclick="openFolder('Todos')">Todos</div>
+                <div class="folder" onclick="openFolder('Propios')">Propios</div>
+                <!-- Carpetas adicionales -->
+            </div>
+        </div>
+
+        <!-- Contenido principal -->
+        <div class="content">
+            <h1>Gestor de Archivos</h1>
+
+            <!-- Barra de búsqueda -->
+            <div class="search-container">
+                <input type="text" id="searchBar" placeholder="Buscar archivos...">
+                <button id="searchButton">Buscar</button>
+            </div>
+
+            <!-- Título y contenedor de archivos de la carpeta seleccionada -->
+            <h2 id="folderTitle">Todos</h2>
+            <div class="file-grid" id="fileGrid">
+                <p id="emptyState" style="display:none; color:#888;">No hay archivos todavía.</p>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.docx" style="display:none">
+
+    <script>
+        let archivosActuales = [];
+        let soloPropios = false;
+
+        function logout() {
+            window.location.href = '/logout';
+        }
+
+        function uploadFile() {
+            document.getElementById("fileInput").click();
+        }
+
+        document.getElementById("fileInput").addEventListener("change", async function () {
+            const archivo = this.files[0];
+            if (!archivo) return;
+
+            const formData = new FormData();
+            formData.append("file", archivo);
+
+            const response = await fetch("/upload-file/", { method: "POST", body: formData });
+            const data = await response.json();
+
+            if (response.ok) {
+                await cargarArchivos();
+            } else {
+                alert(data.message || "No se pudo subir el archivo.");
+            }
+            this.value = "";
+        });
+
+        function createFolder() {
+            alert("La organización en carpetas todavía no está disponible en esta versión; por ahora todos los archivos se ven en 'Todos'.");
+        }
+
+        function openFolder(folderName) {
+            document.getElementById("folderTitle").innerText = folderName;
+            soloPropios = (folderName === "Propios");
+            cargarArchivos();
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes) return "0 B";
+            const unidades = ["B", "KB", "MB", "GB"];
+            let i = 0;
+            while (bytes >= 1024 && i < unidades.length - 1) {
+                bytes /= 1024;
+                i++;
+            }
+            return `${bytes.toFixed(1)} ${unidades[i]}`;
+        }
+
+        function renderArchivos(lista) {
+            const grid = document.getElementById("fileGrid");
+            grid.innerHTML = "";
+
+            if (lista.length === 0) {
+                grid.innerHTML = '<p style="color:#888;">No hay archivos todavía.</p>';
+                return;
+            }
+
+            lista.forEach(archivo => {
+                const item = document.createElement("div");
+                item.className = "file-item";
+                item.style.flexDirection = "column";
+                item.style.gap = "4px";
+                item.style.cursor = "pointer";
+                item.title = `${archivo.filename} (${formatBytes(archivo.length)})`;
+                item.innerHTML = `
+                    <span style="font-size:24px;">📄</span>
+                    <span style="font-size:11px; word-break:break-all; padding:0 4px;">${archivo.filename}</span>
+                `;
+                item.onclick = () => window.location.href = `/download-file/${archivo.file_id}`;
+
+                const borrar = document.createElement("span");
+                borrar.textContent = "🗑";
+                borrar.style.fontSize = "12px";
+                borrar.style.color = "#c0392b";
+                borrar.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`¿Eliminar "${archivo.filename}"?`)) {
+                        await fetch(`/api/files/${archivo.file_id}`, { method: "DELETE" });
+                        cargarArchivos();
+                    }
+                };
+                item.appendChild(borrar);
+                grid.appendChild(item);
+            });
+        }
+
+        async function cargarArchivos() {
+            const url = soloPropios ? "/api/files?mine=true" : "/api/files";
+            const response = await fetch(url);
+
+            if (response.status === 401) {
+                window.location.href = "/login";
+                return;
+            }
+
+            archivosActuales = await response.json();
+            renderArchivos(archivosActuales);
+        }
+
+        document.getElementById("searchButton").addEventListener("click", () => {
+            const termino = document.getElementById("searchBar").value.toLowerCase();
+            renderArchivos(archivosActuales.filter(a => a.filename.toLowerCase().includes(termino)));
+        });
+
+        window.onload = cargarArchivos;
+    </script>
+</body>
+</html>
