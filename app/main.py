@@ -140,12 +140,38 @@ async def upload_file(file: UploadFile = File(...), current_user: str = Depends(
     return {"file_id": str(file_id), "filename": file.filename}
 
 
+def _ids_compartidos_conmigo(current_user: str) -> list[ObjectId]:
+    """IDs (como ObjectId) de archivos que otros le compartieron a current_user."""
+    ids = []
+    for doc in compartidos_collection.find({"destinatario": current_user}, {"file_id": 1}):
+        try:
+            ids.append(ObjectId(doc["file_id"]))
+        except InvalidId:
+            continue
+    return ids
+
+
 @app.get("/api/files")
 async def list_files(mine: bool = False, current_user: str = Depends(get_current_user_api)):
     # Se consulta directamente la colección de metadatos de GridFS
     # ("fs.files") en vez de fs.find(): es la misma información, en un
     # formato más simple de convertir a JSON para el listado.
-    query = {"metadata.uploaded_by": current_user} if mine else {}
+    #
+    # "mine=true" (pestaña "Propios") sigue siendo sólo lo que subiste tú.
+    # Sin ese parámetro (pestaña "Todos") YA NO significa "todos los
+    # archivos de todos los usuarios": por privacidad, sólo se ven los
+    # propios más los que otros te hayan compartido explícitamente desde
+    # /share-files (ver POST /api/share). Antes cualquier usuario veía y
+    # podía descargar el archivo de cualquier otro.
+    if mine:
+        query = {"metadata.uploaded_by": current_user}
+    else:
+        query = {
+            "$or": [
+                {"metadata.uploaded_by": current_user},
+                {"_id": {"$in": _ids_compartidos_conmigo(current_user)}},
+            ]
+        }
     archivos = []
     for doc in sync_db["fs.files"].find(query).sort("uploadDate", -1):
         archivos.append(
@@ -168,6 +194,17 @@ async def download_file(file_id: str, current_user: str = Depends(get_current_us
     except (InvalidId, gridfs.NoFile):
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
+    # Sólo el dueño, o alguien a quien se le haya compartido el archivo,
+    # puede descargarlo. Se responde 404 (no 403) para no revelar que el
+    # archivo existe a quien no tiene acceso a él.
+    propietario = (grid_out.metadata or {}).get("uploaded_by")
+    if propietario != current_user:
+        compartido = compartidos_collection.find_one(
+            {"file_id": file_id, "destinatario": current_user}
+        )
+        if not compartido:
+            raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
     return StreamingResponse(
         io.BytesIO(grid_out.read()),
         media_type=grid_out.content_type or "application/octet-stream",
@@ -178,9 +215,24 @@ async def download_file(file_id: str, current_user: str = Depends(get_current_us
 @app.delete("/api/files/{file_id}")
 async def delete_file(file_id: str, current_user: str = Depends(get_current_user_api)):
     try:
-        fs.delete(ObjectId(file_id))
+        file_oid = ObjectId(file_id)
     except InvalidId:
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+    archivo = sync_db["fs.files"].find_one({"_id": file_oid})
+    if not archivo:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+    # Sólo el propietario puede eliminar el archivo (antes cualquier
+    # usuario autenticado podía borrar el archivo de cualquier otro).
+    propietario = (archivo.get("metadata") or {}).get("uploaded_by")
+    if propietario != current_user:
+        raise HTTPException(status_code=403, detail="Sólo el propietario puede eliminar este archivo")
+
+    fs.delete(file_oid)
+    # Limpia también los permisos de "compartido" que apuntaban a este
+    # archivo, para no dejar registros huérfanos en archivos_compartidos.
+    compartidos_collection.delete_many({"file_id": file_id})
     return {"mensaje": "Archivo eliminado correctamente"}
 
 
