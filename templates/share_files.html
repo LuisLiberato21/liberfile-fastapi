@@ -150,65 +150,155 @@
             </div>
 
             <div class="file-list">
-                <h3>Archivos disponibles para compartir:</h3>
-                <div class="file" onclick="selectFile('Archivo1.txt')">Archivo1.txt</div>
-                <div class="file" onclick="selectFile('Archivo2.pdf')">Archivo2.pdf</div>
-                <div class="file" onclick="selectFile('Archivo3.jpg')">Archivo3.jpg</div>
-                <!-- Aquí aparecerán los archivos que el usuario puede compartir -->
+                <h3>Tus archivos (selecciona uno para compartir):</h3>
+                <div id="fileList"><p style="color:#888;">Cargando...</p></div>
             </div>
 
             <div class="user-selection">
                 <h3>Selecciona destinatario:</h3>
-                <select id="recipient">
-                    <option value="usuario1">Usuario 1</option>
-                    <option value="usuario2">Usuario 2</option>
-                    <option value="usuario3">Usuario 3</option>
-                    <!-- Aquí aparecerán los usuarios registrados -->
-                </select>
+                <select id="recipient"></select>
             </div>
 
             <div class="permissions">
                 <h3>Establecer permisos:</h3>
                 <label>
-                    <input type="radio" name="permissions" value="read" checked>
+                    <input type="radio" name="permissions" value="lectura" checked>
                     Solo lectura
                 </label>
                 <label>
-                    <input type="radio" name="permissions" value="edit">
+                    <input type="radio" name="permissions" value="edicion">
                     Edición
                 </label>
+            </div>
+
+            <div id="sharedList" style="display:none; margin-top:20px;">
+                <h3>Archivos compartidos conmigo:</h3>
+                <div id="sharedListContent"></div>
             </div>
         </div>
     </div>
 
     <script>
-        let selectedFile = "";
+        const currentUser = "{{ current_user }}";
+        let selectedFileId = "";
+        let selectedFileName = "";
 
         function logout() {
             // Redirigir al módulo de inicio de sesión
             window.location.href = '/logout';
         }
 
-        function shareFile() {
-            if (selectedFile) {
-                const recipient = document.getElementById("recipient").value;
-                const permission = document.querySelector('input[name="permissions"]:checked').value;
-                alert(`Compartiendo '${selectedFile}' con ${recipient} con permiso de ${permission}.`);
-                // Aquí puedes agregar el código para compartir el archivo en el servidor.
-            } else {
-                alert("Por favor, selecciona un archivo para compartir.");
+        function selectFile(fileId, fileName, el) {
+            selectedFileId = fileId;
+            selectedFileName = fileName;
+            document.querySelectorAll('.file-list .file').forEach(d => d.style.backgroundColor = "");
+            el.style.backgroundColor = "#d4edda";
+        }
+
+        async function cargarMisArchivos() {
+            const contenedor = document.getElementById("fileList");
+            const response = await fetch("/api/files?mine=true");
+            if (response.status === 401) {
+                window.location.href = "/login";
+                return;
+            }
+            const archivos = await response.json();
+
+            if (archivos.length === 0) {
+                contenedor.innerHTML = '<p style="color:#888;">Todavía no has subido ningún archivo (hazlo desde el Gestor).</p>';
+                return;
+            }
+
+            contenedor.innerHTML = "";
+            archivos.forEach(archivo => {
+                const div = document.createElement("div");
+                div.className = "file";
+                div.textContent = archivo.filename;
+                div.onclick = () => selectFile(archivo.file_id, archivo.filename, div);
+                contenedor.appendChild(div);
+            });
+        }
+
+        async function cargarUsuarios() {
+            const select = document.getElementById("recipient");
+            const response = await fetch("/api/usuarios");
+            if (response.status === 401) {
+                window.location.href = "/login";
+                return;
+            }
+            const usuarios = await response.json();
+
+            select.innerHTML = "";
+            usuarios
+                .filter(u => u.usuario && u.usuario !== currentUser)
+                .forEach(u => {
+                    const option = document.createElement("option");
+                    option.value = u.usuario;
+                    option.textContent = `${u.nombres} ${u.apellidos} (${u.usuario})`;
+                    select.appendChild(option);
+                });
+
+            if (select.options.length === 0) {
+                select.innerHTML = '<option value="">No hay otros usuarios registrados</option>';
             }
         }
 
-        function viewSharedFiles() {
-            alert("Funcionalidad para ver archivos compartidos.");
-            // Aquí puedes agregar el código para mostrar los archivos que han sido compartidos.
+        async function shareFile() {
+            if (!selectedFileId) {
+                alert("Por favor, selecciona un archivo para compartir.");
+                return;
+            }
+            const recipient = document.getElementById("recipient").value;
+            if (!recipient) {
+                alert("No hay un destinatario válido seleccionado.");
+                return;
+            }
+            const permission = document.querySelector('input[name="permissions"]:checked').value;
+
+            const response = await fetch("/api/share", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ file_id: selectedFileId, destinatario: recipient, permiso: permission }),
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(data.mensaje);
+            } else {
+                alert(data.detail || "No se pudo compartir el archivo.");
+            }
         }
 
-        function selectFile(fileName) {
-            selectedFile = fileName;
-            alert(`Archivo seleccionado: ${selectedFile}`);
+        async function viewSharedFiles() {
+            const panel = document.getElementById("sharedList");
+            const contenido = document.getElementById("sharedListContent");
+
+            if (panel.style.display === "none") {
+                const response = await fetch("/api/shared-with-me");
+                const compartidos = await response.json();
+
+                contenido.innerHTML = compartidos.length === 0
+                    ? '<p style="color:#888;">Nadie ha compartido archivos contigo todavía.</p>'
+                    : "";
+
+                compartidos.forEach(c => {
+                    const div = document.createElement("div");
+                    div.className = "file";
+                    div.style.cursor = "default";
+                    div.innerHTML = `<strong>${c.filename}</strong> — compartido por ${c.propietario} `
+                        + `(${c.permiso === "lectura" ? "solo lectura" : "edición"})`;
+                    contenido.appendChild(div);
+                });
+                panel.style.display = "block";
+            } else {
+                panel.style.display = "none";
+            }
         }
+
+        window.onload = () => {
+            cargarMisArchivos();
+            cargarUsuarios();
+        };
     </script>
 </body>
 </html>
