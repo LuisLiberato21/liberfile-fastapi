@@ -1,6 +1,7 @@
 import io
 import mimetypes
 import os
+from datetime import datetime
 
 import gridfs
 from bson import ObjectId
@@ -13,7 +14,7 @@ from pydantic import BaseModel
 from starlette.requests import Request
 
 from core.config import settings
-from core.db import fs, sync_db, usuarios_collection
+from core.db import compartidos_collection, fs, sync_db, usuarios_collection
 from core.deps import get_current_user_api, get_optional_user
 from routes.auth import router as auth_router
 
@@ -32,6 +33,13 @@ class UsuarioUpdate(BaseModel):
     apellidos: str
     correo_electronico: str
     rol: str
+
+
+# Modelo para compartir un archivo (ver POST /api/share)
+class CompartirArchivo(BaseModel):
+    file_id: str
+    destinatario: str
+    permiso: str  # "lectura" o "edicion"
 
 
 def _require_login(request: Request, current_user: str | None):
@@ -176,13 +184,82 @@ async def delete_file(file_id: str, current_user: str = Depends(get_current_user
     return {"mensaje": "Archivo eliminado correctamente"}
 
 
+# ---- Compartir archivos (usado por share_files.html) ----
+#
+# La pantalla de "Compartir Archivos" existía sólo como maqueta visual: el
+# listado de archivos y de usuarios estaba escrito a mano en el HTML
+# ("Archivo1.txt", "Usuario 1"...) y el botón de compartir sólo mostraba un
+# alert(), sin tocar el servidor. Lo que sigue es la lógica real: un
+# registro por cada (archivo, destinatario) con el permiso otorgado.
+
+
+@app.post("/api/share")
+async def compartir_archivo(datos: CompartirArchivo, current_user: str = Depends(get_current_user_api)):
+    if datos.permiso not in ("lectura", "edicion"):
+        raise HTTPException(status_code=400, detail="El permiso debe ser 'lectura' o 'edicion'")
+
+    try:
+        archivo = sync_db["fs.files"].find_one({"_id": ObjectId(datos.file_id)})
+    except InvalidId:
+        archivo = None
+    if not archivo:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+    # Sólo quien subió el archivo puede compartirlo.
+    propietario = (archivo.get("metadata") or {}).get("uploaded_by")
+    if propietario != current_user:
+        raise HTTPException(status_code=403, detail="Sólo el propietario puede compartir este archivo")
+
+    if datos.destinatario == current_user:
+        raise HTTPException(status_code=400, detail="No puedes compartir un archivo contigo mismo")
+
+    destinatario_existe = await usuarios_collection.find_one({"usuario": datos.destinatario})
+    if not destinatario_existe:
+        raise HTTPException(status_code=404, detail="El usuario destinatario no existe")
+
+    compartidos_collection.update_one(
+        {"file_id": datos.file_id, "destinatario": datos.destinatario},
+        {
+            "$set": {
+                "file_id": datos.file_id,
+                "filename": archivo.get("filename"),
+                "propietario": current_user,
+                "destinatario": datos.destinatario,
+                "permiso": datos.permiso,
+                "fecha": datetime.utcnow(),
+            }
+        },
+        upsert=True,
+    )
+    return {
+        "mensaje": f"Archivo '{archivo.get('filename')}' compartido con {datos.destinatario} "
+        f"({'solo lectura' if datos.permiso == 'lectura' else 'edición'})."
+    }
+
+
+@app.get("/api/shared-with-me")
+async def archivos_compartidos_conmigo(current_user: str = Depends(get_current_user_api)):
+    compartidos = []
+    for doc in compartidos_collection.find({"destinatario": current_user}).sort("fecha", -1):
+        compartidos.append(
+            {
+                "file_id": doc["file_id"],
+                "filename": doc.get("filename"),
+                "propietario": doc.get("propietario"),
+                "permiso": doc.get("permiso"),
+                "fecha": doc["fecha"].isoformat() if doc.get("fecha") else None,
+            }
+        )
+    return JSONResponse(content=compartidos)
+
+
 # ---- Usuarios (API usada por users.html) ----
 
 @app.get("/api/usuarios")
 async def obtener_usuarios(current_user: str = Depends(get_current_user_api)):
     usuarios = []
     async for usuario in usuarios_collection.find(
-        {}, {"_id": 1, "nombres": 1, "apellidos": 1, "correo_electronico": 1, "rol": 1}
+        {}, {"_id": 1, "usuario": 1, "nombres": 1, "apellidos": 1, "correo_electronico": 1, "rol": 1}
     ):
         usuario["_id"] = str(usuario["_id"])
         usuarios.append(usuario)
