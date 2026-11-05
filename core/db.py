@@ -22,3 +22,9 @@ usuarios_collection = db.get_collection("usuarios")
 sync_client = MongoClient(settings.mongo_uri)
 sync_db = sync_client[settings.mongo_db_name]
 fs = gridfs.GridFS(sync_db)
+
+# Permisos de "compartir archivo" (quién puede ver el archivo de quién, y con
+# qué permiso). Vive en el cliente síncrono porque siempre se consulta junto
+# con fs.files, igual que usuarios_collection vive en el async porque se usa
+# junto al resto de rutas de usuarios.
+compartidos_collection = sync_db.get_collection("archivos_compartidos")
