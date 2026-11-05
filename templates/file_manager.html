@@ -174,10 +174,34 @@
             font-size: 14px;
             cursor: pointer;
             transition: transform 0.3s;
+            position: relative;
         }
 
         .file-item:hover {
             transform: scale(1.05);
+        }
+
+        .file-item .delete-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #c0392b;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .file-item .delete-badge:hover {
+            background-color: #a93226;
         }
     </style>
 </head>
@@ -229,6 +253,7 @@
     <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.docx" style="display:none">
 
     <script>
+        const currentUser = "{{ current_user }}";
         let archivosActuales = [];
         let soloPropios = false;
 
@@ -289,30 +314,44 @@
             }
 
             lista.forEach(archivo => {
+                const esPropio = archivo.uploaded_by === currentUser;
+
                 const item = document.createElement("div");
                 item.className = "file-item";
                 item.style.flexDirection = "column";
                 item.style.gap = "4px";
                 item.style.cursor = "pointer";
-                item.title = `${archivo.filename} (${formatBytes(archivo.length)})`;
+                item.title = esPropio
+                    ? `${archivo.filename} (${formatBytes(archivo.length)})`
+                    : `${archivo.filename} (${formatBytes(archivo.length)}) — compartido por ${archivo.uploaded_by}`;
                 item.innerHTML = `
                     <span style="font-size:24px;">📄</span>
                     <span style="font-size:11px; word-break:break-all; padding:0 4px;">${archivo.filename}</span>
+                    ${esPropio ? "" : `<span style="font-size:9px; color:#888;">de ${archivo.uploaded_by}</span>`}
                 `;
                 item.onclick = () => window.location.href = `/download-file/${archivo.file_id}`;
 
-                const borrar = document.createElement("span");
-                borrar.textContent = "🗑";
-                borrar.style.fontSize = "12px";
-                borrar.style.color = "#c0392b";
-                borrar.onclick = async (e) => {
-                    e.stopPropagation();
-                    if (confirm(`¿Eliminar "${archivo.filename}"?`)) {
-                        await fetch(`/api/files/${archivo.file_id}`, { method: "DELETE" });
-                        cargarArchivos();
-                    }
-                };
-                item.appendChild(borrar);
+                // Sólo el dueño del archivo puede eliminarlo (el backend también
+                // lo exige); por eso la "x" sólo aparece sobre tus propios archivos.
+                if (esPropio) {
+                    const borrar = document.createElement("span");
+                    borrar.className = "delete-badge";
+                    borrar.textContent = "✕";
+                    borrar.title = "Eliminar archivo";
+                    borrar.onclick = async (e) => {
+                        e.stopPropagation();
+                        if (confirm(`¿Seguro que quieres eliminar "${archivo.filename}"? Esta acción no se puede deshacer.`)) {
+                            const resp = await fetch(`/api/files/${archivo.file_id}`, { method: "DELETE" });
+                            if (resp.ok) {
+                                cargarArchivos();
+                            } else {
+                                const data = await resp.json().catch(() => ({}));
+                                alert(data.detail || "No se pudo eliminar el archivo.");
+                            }
+                        }
+                    };
+                    item.appendChild(borrar);
+                }
                 grid.appendChild(item);
             });
         }
